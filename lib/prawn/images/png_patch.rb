@@ -41,7 +41,7 @@ module Prawn
             case alpha_bits
             when 8
               # downsample 16-bit alpha channel to 8 bits for Adobe Reader support
-              alpha_data.map { |byte| byte >> 8 }.pack('c*')
+              alpha_data.map { |byte| byte >> 8 }.pack('C*')
             when 16
               alpha_data.pack('n*')
             else
@@ -51,10 +51,13 @@ module Prawn
           raise Errors::UnsupportedImageType, "Can't handle #{bits}-bit PNG images"
         end
 
-        @img_data      = Zlib::Deflate.deflate(img_data)
-        @alpha_channel = Zlib::Deflate.deflate(alpha_channel)
+        # release ImageMagick resources as soon as possible
+        img.destroy! if img
+
+        # favor speed over maximum compression for quicker embedding
+        @img_data      = Zlib::Deflate.deflate(img_data, Zlib::BEST_SPEED)
+        @alpha_channel = Zlib::Deflate.deflate(alpha_channel, Zlib::BEST_SPEED)
       end
     end
   end
 end
-
